@@ -17,7 +17,7 @@ vagrant up
 ```
 
 This will start the VM, and run the provisioning playbook (on the first VM startup).
-Visit https://192.168.33.12 and you should see the Redmine home page.
+Visit https://192.168.33.13 and you should see the Redmine home page.
 
 
 ```
