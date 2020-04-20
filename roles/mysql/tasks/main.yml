@@ -1,0 +1,65 @@
+---
+- name: Install mysql rpm file
+  yum:
+    name: "{{ mysql_version }}"
+    state: present
+
+- name: Install mysql modules
+  yum:
+    name: "{{ item }}"
+    state: installed
+    update_cache: yes
+  loop: "{{ mysql_modules }}"
+
+- name: Ensure mysql is started
+  service:
+    name: mysqld
+    state: started
+    enabled: true
+
+- name: Get default root password
+  shell: cat /var/log/mysqld.log | grep 'temporary password' | awk '{print $11}'
+  register: mysql_default_password
+  no_log: true
+
+- name: Check if root password is set
+  shell: >
+    mysqladmin -u root status -p'{{ mysql_root_password }}'
+  changed_when: false
+  failed_when: false
+  register: root_check_pwd
+
+- name: Change password validation policy
+  shell: |
+    mysql -u root -p'{{ mysql_default_password.stdout_lines[0] }}' --connect-expired-password -e "SET GLOBAL validate_password_length=4;"
+    mysql -u root -p'{{ mysql_default_password.stdout_lines[0] }}' --connect-expired-password -e "SET GLOBAL validate_password_policy=LOW;"
+  when: root_check_pwd is not skipped and root_check_pwd.rc == 1
+
+- name: Set the root password
+  shell: |
+    mysql -u root -p'{{ mysql_default_password.stdout_lines[0] }}' --connect-expired-password -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '{{ mysql_root_password }}';"
+  when: root_check_pwd is not skipped and root_check_pwd.rc == 1
+
+- name: Create database for Redmine
+  mysql_db:
+    name: "{{ mysql_db }}"
+    state: present
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+
+- name: Create MySQL user for Redmine
+  mysql_user:
+    name: "{{ mysql_user }}"
+    password: "{{ mysql_password }}"
+    priv: "{{ mysql_db }}.*:ALL"
+    state: present
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+
+- name: Copy mysql config
+  template:
+    src: "roles/mysql/files/my.cnf.j2"
+    dest: "/etc/my.cnf"
+    backup: yes
+    mode: 644
+  notify: restart mysql

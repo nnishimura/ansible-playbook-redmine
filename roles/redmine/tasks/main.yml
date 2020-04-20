@@ -1,0 +1,74 @@
+---
+- name: Download and unpack Redmine
+  unarchive:
+    src: http://www.redmine.org/releases/redmine-{{ redmine_version }}.tar.gz
+    dest: "/var/www/{{ http_host }}"
+    remote_src: yes
+    creates: "{{ redmine_dir }}"
+
+- name: Set ownership
+  file:
+    path: "/var/www/{{ http_host }}"
+    state: directory
+    recurse: yes
+    owner: "{{ remote_web_user }}"
+    group: "{{ remote_web_user }}"
+
+- name: Add database.yml
+  template:
+    src: roles/redmine/files/database.yml.j2
+    dest: "{{ redmine_dir }}/config/database.yml"
+  register: check_database_yml
+
+- name: Add configuration.yml
+  template:
+    src: roles/redmine/files/configuration.yml.j2
+    dest: "{{ redmine_dir }}/config/configuration.yml"
+
+- name: Add Gemfile.local
+  copy:
+    src: roles/redmine/files/Gemfile.local
+    dest: "{{ redmine_dir }}/Gemfile.local"
+
+- name: Install gem packages
+  bundler:
+    state: latest
+    deployment_mode: yes
+    chdir: "{{ redmine_dir }}"
+  environment:
+    PATH: "/usr/local/bin:{{ ansible_env.PATH }}"
+    RAILS_ENV: production
+
+- name: Create secret token
+  shell: bundle exec rake generate_secret_token
+  args:
+    chdir: "{{ redmine_dir }}"
+  environment:
+    PATH: "/usr/local/bin:{{ ansible_env.PATH }}"
+    RAILS_ENV: production
+  when: check_database_yml is changed
+
+- name: Migrate database
+  shell: bundle exec rake db:migrate
+  args:
+    chdir: "{{ redmine_dir }}"
+  environment:
+    PATH: "/usr/local/bin:{{ ansible_env.PATH }}"
+    RAILS_ENV: production
+  when: check_database_yml is changed
+
+- name: Load default data
+  shell: bundle exec rake redmine:load_default_data
+  args:
+    chdir: "{{ redmine_dir }}"
+  environment:
+    PATH: "/usr/local/bin:{{ ansible_env.PATH }}"
+    RAILS_ENV: production
+    REDMINE_LANG: en
+  when: check_database_yml is changed
+
+- name: Set permissions for directories
+  shell: "find {{ redmine_dir }}/ -type d -exec chmod 750 {} \\;"
+
+- name: Set permissions for files
+  shell: "find {{ redmine_dir }}/ -type f -exec chmod 640 {} \\;"

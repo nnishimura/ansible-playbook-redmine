@@ -1,0 +1,23 @@
+---
+system_modules: [ 'wget', 'vim', 'git', 'epel-release', 'ImageMagick', 'ImageMagick-devel' ]
+
+# mySQL settings
+mysql_modules: [ 'mysql-community-server', 'MySQL-python', 'mysql-devel' ]
+mysql_version: http://dev.mysql.com/get/mysql57-community-release-el7-7.noarch.rpm
+mysql_root_password: "CHANGE_ME"
+mysql_db: "redmine"
+mysql_user: "redmine_user"
+mysql_password: "redmine_user"
+
+# Nginx settings
+remote_web_user: "nginx"
+http_host: "www.example.com"
+http_conf: "www.example.com.conf"
+host_ip: 192.168.33.12
+
+# Redmine settings
+redmine_version: 4.1.1
+redmine_dir: /var/www/{{ http_host }}/redmine-{{ redmine_version }}
+
+# Ruby settings
+ruby_version: '2.5'

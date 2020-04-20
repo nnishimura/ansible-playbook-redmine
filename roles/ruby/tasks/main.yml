@@ -1,0 +1,52 @@
+---
+- name: Install dependencies for ruby build
+  yum:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - gcc
+    - openssl-devel
+    - libyaml-devel
+    - libffi-devel
+    - readline-devel
+    - gdbm-devel
+
+- name: Download and unpack ruby
+  unarchive:
+    src: https://cache.ruby-lang.org/pub/ruby/{{ ruby_version }}/ruby-{{ ruby_version }}.0.tar.gz
+    dest: "/tmp"
+    remote_src: yes
+    creates: "/tmp/ruby-{{ ruby_version }}"
+  register: download_ruby
+
+- name: Build ruby
+  shell: "{{ item }}"
+  args:
+    chdir: /tmp/ruby-{{ ruby_version }}.0
+  with_items:
+    - ./configure --disable-install-doc
+    - make
+    - make install
+  when: download_ruby is changed
+
+- name: Install bundler
+  gem:
+    name: bundler
+    user_install: no
+    build_flags: --no-rdoc --no-ri
+    executable: /usr/local/bin/gem
+
+- name: Add ruby symlinks
+  file:
+    src: "/usr/local/bin/{{ item }}"
+    dest: "/usr/bin/{{ item }}"
+    state: link
+    force: true
+  with_items:
+    - erb
+    - gem
+    - irb
+    - rake
+    - rdoc
+    - ruby
+    - bundler

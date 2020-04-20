@@ -1,0 +1,17 @@
+[mysql]
+default-character-set = utf8
+
+[mysqld]
+character-set-server=utf8
+validate_password_length=8
+validate_password_policy=MEDIUM
+
+[mysqldump]
+default-character-set = utf8
+quick
+set-charset
+single-transaction
+
+datadir=/var/lib/mysql
+socket=/var/lib/mysql/mysql.sock
+log-error=/var/log/mysqld.log

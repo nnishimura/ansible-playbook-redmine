@@ -1,0 +1,22 @@
+---
+- name: Create certs root
+  file:
+    path: "/etc/ssl/private"
+    state: directory
+    owner: "{{ remote_web_user }}"
+    group: "{{ remote_web_user }}"
+    mode: '0755'
+
+- name: Create a Self Signed SSL certificate
+  command: /etc/pki/tls/certs/make-dummy-cert /etc/ssl/private/{{ http_host }}.pem
+  args:
+    creates: /etc/ssl/private/{{ http_host }}.pem
+
+- name: Create a symlink
+  file:
+    src: /etc/ssl/private/{{ http_host }}.pem
+    dest: /etc/ssl/private/privkey.pem
+    owner: "{{ remote_web_user }}"
+    group: "{{ remote_web_user }}"
+    state: link
+    force: true

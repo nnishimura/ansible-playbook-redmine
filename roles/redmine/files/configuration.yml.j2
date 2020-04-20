@@ -1,0 +1,9 @@
+production:
+  email_delivery:
+    delivery_method: :smtp
+    smtp_settings:
+      address: "{{ host_ip }}"
+      port: 25
+      domain: "{{ http_host }}"
+
+  rmagick_font_path: /usr/share/fonts/ipa-pgothic/ipagp.ttf

@@ -1,0 +1,30 @@
+---
+- name: Install Nginx
+  yum:
+    name: nginx
+    update_cache: yes
+    state: present
+
+- name: Ensure Nginx is started
+  service:
+    name: nginx
+    state: started
+    enabled: true
+
+- name: Create document root
+  file:
+    path: "/var/www/{{ http_host }}"
+    state: directory
+    owner: "{{ remote_web_user }}"
+    group: "{{ remote_web_user }}"
+    mode: '0755'
+
+- name: Copy Nginx default Configuration
+  copy:
+    src: "roles/nginx/files/nginx.conf.j2"
+    dest: "/etc/nginx/nginx.conf"
+
+- name: Set up Nginx VirtualHost
+  template:
+    src: "roles/nginx/files/{{ http_conf }}.j2"
+    dest: "/etc/nginx/conf.d/{{ http_conf }}"

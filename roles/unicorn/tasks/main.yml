@@ -1,0 +1,40 @@
+---
+- name: Add unicorn to Gemfile.local
+  copy:
+    src: roles/redmine/files/Gemfile.local
+    dest: "{{ redmine_dir }}/Gemfile.local"
+
+- name: Install unicorn
+  bundler:
+    state: latest
+    deployment_mode: yes
+    chdir: "{{ redmine_dir }}"
+  environment:
+    PATH: "/usr/local/bin:{{ ansible_env.PATH }}"
+    RAILS_ENV: production
+
+- name: Add unicorn symlinks
+  file:
+    src: "/usr/local/bin/{{ item }}"
+    dest: "/usr/bin/{{ item }}"
+    state: link
+    force: true
+  with_items:
+    - unicorn_rails
+    - unicorn
+
+- name: Add unicorn config
+  template:
+    src: roles/unicorn/files/unicorn.rb.j2
+    dest: "{{ redmine_dir }}/config/unicorn.rb"
+
+- name: Add unicorn as systemd
+  template:
+    src: roles/unicorn/files/redmine_unicorn.service.j2
+    dest: /usr/lib/systemd/system/redmine_unicorn.service
+
+- name: Ensure Unicorn is started
+  service:
+    name: redmine_unicorn
+    state: started
+    enabled: true
